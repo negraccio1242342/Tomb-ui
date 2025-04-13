@@ -1,0 +1,394 @@
+-- Modernized UI Library Structure
+
+local ModernUI = {
+    -- Configuration
+    Config = {
+        AccentColor = Color3.fromRGB(0, 162, 255),
+        DarkColor = Color3.fromRGB(25, 25, 25),
+        LightColor = Color3.fromRGB(45, 45, 45),
+        TextColor = Color3.fromRGB(240, 240, 240),
+        Font = Enum.Font.Gotham,
+        CornerRadius = UDim.new(0, 6),
+        TransitionTime = 0.15
+    },
+    
+    -- State
+    Windows = {},
+    CurrentWindow = nil,
+    Open = false,
+    
+    -- Utility functions
+    CreateElement = function(self, type, properties)
+        local element = Instance.new(type)
+        for prop, value in pairs(properties) do
+            element[prop] = value
+        end
+        return element
+    end,
+    
+    -- Main UI Creation
+    CreateWindow = function(self, title)
+        local window = {
+            Title = title,
+            Tabs = {},
+            CurrentTab = nil,
+            Container = nil
+        }
+        
+        -- Create main window frame
+        window.Container = self:CreateElement("Frame", {
+            Name = title.."Window",
+            BackgroundColor3 = self.Config.DarkColor,
+            Size = UDim2.new(0, 500, 0, 400),
+            Position = UDim2.new(0.5, -250, 0.5, -200),
+            AnchorPoint = Vector2.new(0.5, 0.5),
+            ClipsDescendants = true
+        })
+        
+        -- Add title bar
+        local titleBar = self:CreateElement("Frame", {
+            Name = "TitleBar",
+            BackgroundColor3 = self.Config.AccentColor,
+            Size = UDim2.new(1, 0, 0, 30),
+            Parent = window.Container
+        })
+        
+        -- Add title text
+        local titleText = self:CreateElement("TextLabel", {
+            Name = "TitleText",
+            Text = title,
+            TextColor3 = self.Config.TextColor,
+            Font = self.Config.Font,
+            TextSize = 18,
+            BackgroundTransparency = 1,
+            Size = UDim2.new(1, -40, 1, 0),
+            Position = UDim2.new(0, 10, 0, 0),
+            TextXAlignment = Enum.TextXAlignment.Left,
+            Parent = titleBar
+        })
+        
+        -- Add close button
+        local closeButton = self:CreateElement("TextButton", {
+            Name = "CloseButton",
+            Text = "×",
+            TextColor3 = self.Config.TextColor,
+            Font = self.Config.Font,
+            TextSize = 20,
+            BackgroundTransparency = 1,
+            Size = UDim2.new(0, 30, 1, 0),
+            Position = UDim2.new(1, -30, 0, 0),
+            Parent = titleBar
+        })
+        
+        -- Add tab container
+        local tabContainer = self:CreateElement("Frame", {
+            Name = "TabContainer",
+            BackgroundColor3 = self.Config.LightColor,
+            Size = UDim2.new(1, 0, 0, 40),
+            Position = UDim2.new(0, 0, 0, 30),
+            Parent = window.Container
+        })
+        
+        -- Add content container
+        local contentContainer = self:CreateElement("ScrollingFrame", {
+            Name = "ContentContainer",
+            BackgroundColor3 = self.Config.DarkColor,
+            Size = UDim2.new(1, 0, 1, -70),
+            Position = UDim2.new(0, 0, 0, 70),
+            ScrollBarThickness = 5,
+            Parent = window.Container
+        })
+        
+        -- Add UIListLayout for tabs
+        local tabListLayout = self:CreateElement("UIListLayout", {
+            Name = "TabListLayout",
+            FillDirection = Enum.FillDirection.Horizontal,
+            SortOrder = Enum.SortOrder.LayoutOrder,
+            Parent = tabContainer
+        })
+        
+        -- Add UIListLayout for content
+        local contentListLayout = self:CreateElement("UIListLayout", {
+            Name = "ContentListLayout",
+            SortOrder = Enum.SortOrder.LayoutOrder,
+            Parent = contentContainer
+        })
+        
+        -- Add padding
+        local contentPadding = self:CreateElement("UIPadding", {
+            Name = "ContentPadding",
+            PaddingLeft = UDim.new(0, 10),
+            PaddingRight = UDim.new(0, 10),
+            PaddingTop = UDim.new(0, 10),
+            PaddingBottom = UDim.new(0, 10),
+            Parent = contentContainer
+        })
+        
+        -- Add corner rounding
+        local uiCorner = self:CreateElement("UICorner", {
+            Name = "UICorner",
+            CornerRadius = self.Config.CornerRadius,
+            Parent = window.Container
+        })
+        
+        -- Add drop shadow
+        local uiShadow = self:CreateElement("UIStroke", {
+            Name = "UIStroke",
+            Color = Color3.fromRGB(0, 0, 0),
+            Thickness = 2,
+            Transparency = 0.8,
+            Parent = window.Container
+        })
+        
+        -- Add window to table
+        table.insert(self.Windows, window)
+        self.CurrentWindow = window
+        
+        return window
+    end,
+    
+    -- Tab creation
+    CreateTab = function(self, window, title)
+        local tab = {
+            Title = title,
+            Buttons = {},
+            Sections = {},
+            Container = nil
+        }
+        
+        -- Create tab button
+        local tabButton = self:CreateElement("TextButton", {
+            Name = title.."Tab",
+            Text = title,
+            TextColor3 = self.Config.TextColor,
+            Font = self.Config.Font,
+            TextSize = 14,
+            BackgroundColor3 = self.Config.LightColor,
+            Size = UDim2.new(0, 100, 1, 0),
+            Parent = window.TabContainer
+        })
+        
+        -- Create tab content frame
+        tab.Container = self:CreateElement("Frame", {
+            Name = title.."Content",
+            BackgroundTransparency = 1,
+            Size = UDim2.new(1, 0, 1, 0),
+            Visible = false,
+            Parent = window.ContentContainer
+        })
+        
+        -- Add UIListLayout for sections
+        local sectionListLayout = self:CreateElement("UIListLayout", {
+            Name = "SectionListLayout",
+            SortOrder = Enum.SortOrder.LayoutOrder,
+            Parent = tab.Container
+        })
+        
+        -- Add padding
+        local sectionPadding = self:CreateElement("UIPadding", {
+            Name = "SectionPadding",
+            PaddingLeft = UDim.new(0, 5),
+            PaddingRight = UDim.new(0, 5),
+            PaddingTop = UDim.new(0, 5),
+            PaddingBottom = UDim.new(0, 5),
+            Parent = tab.Container
+        })
+        
+        -- Add tab to window
+        table.insert(window.Tabs, tab)
+        
+        -- Set first tab as active if none selected
+        if #window.Tabs == 1 then
+            self:SetActiveTab(window, tab)
+        end
+        
+        return tab
+    end,
+    
+    -- Section creation
+    CreateSection = function(self, tab, title)
+        local section = {
+            Title = title,
+            Options = {},
+            Container = nil
+        }
+        
+        -- Create section frame
+        section.Container = self:CreateElement("Frame", {
+            Name = title.."Section",
+            BackgroundColor3 = self.Config.LightColor,
+            Size = UDim2.new(1, 0, 0, 0), -- Height will be auto-sized
+            Parent = tab.Container
+        })
+        
+        -- Add corner rounding
+        local uiCorner = self:CreateElement("UICorner", {
+            Name = "UICorner",
+            CornerRadius = self.Config.CornerRadius,
+            Parent = section.Container
+        })
+        
+        -- Add title label
+        local titleLabel = self:CreateElement("TextLabel", {
+            Name = "TitleLabel",
+            Text = title,
+            TextColor3 = self.Config.TextColor,
+            Font = self.Config.Font,
+            TextSize = 16,
+            BackgroundTransparency = 1,
+            Size = UDim2.new(1, 0, 0, 25),
+            Position = UDim2.new(0, 10, 0, 5),
+            TextXAlignment = Enum.TextXAlignment.Left,
+            Parent = section.Container
+        })
+        
+        -- Add content frame
+        local contentFrame = self:CreateElement("Frame", {
+            Name = "ContentFrame",
+            BackgroundTransparency = 1,
+            Size = UDim2.new(1, -10, 0, 0), -- Height will be auto-sized
+            Position = UDim2.new(0, 5, 0, 30),
+            Parent = section.Container
+        })
+        
+        -- Add UIListLayout for options
+        local optionListLayout = self:CreateElement("UIListLayout", {
+            Name = "OptionListLayout",
+            SortOrder = Enum.SortOrder.LayoutOrder,
+            Parent = contentFrame
+        })
+        
+        -- Add padding
+        local optionPadding = self:CreateElement("UIPadding", {
+            Name = "OptionPadding",
+            PaddingLeft = UDim.new(0, 5),
+            PaddingRight = UDim.new(0, 5),
+            PaddingTop = UDim.new(0, 5),
+            PaddingBottom = UDim.new(0, 5),
+            Parent = contentFrame
+        })
+        
+        -- Add section to tab
+        table.insert(tab.Sections, section)
+        
+        return section
+    end,
+    
+    -- Toggle option
+    CreateToggle = function(self, section, config)
+        local toggle = {
+            Name = config.Name,
+            Value = config.Default or false,
+            Callback = config.Callback or function() end
+        }
+        
+        -- Create toggle container
+        local container = self:CreateElement("Frame", {
+            Name = config.Name.."Toggle",
+            BackgroundTransparency = 1,
+            Size = UDim2.new(1, 0, 0, 25),
+            Parent = section.Container
+        })
+        
+        -- Create label
+        local label = self:CreateElement("TextLabel", {
+            Name = "Label",
+            Text = config.Name,
+            TextColor3 = self.Config.TextColor,
+            Font = self.Config.Font,
+            TextSize = 14,
+            BackgroundTransparency = 1,
+            Size = UDim2.new(0.7, 0, 1, 0),
+            TextXAlignment = Enum.TextXAlignment.Left,
+            Parent = container
+        })
+        
+        -- Create toggle background
+        local toggleBg = self:CreateElement("Frame", {
+            Name = "ToggleBg",
+            BackgroundColor3 = Color3.fromRGB(70, 70, 70),
+            Size = UDim2.new(0, 40, 0, 20),
+            Position = UDim2.new(1, -40, 0.5, -10),
+            AnchorPoint = Vector2.new(1, 0.5),
+            Parent = container
+        })
+        
+        -- Add corner rounding
+        local bgCorner = self:CreateElement("UICorner", {
+            Name = "BgCorner",
+            CornerRadius = UDim.new(1, 0),
+            Parent = toggleBg
+        })
+        
+        -- Create toggle button
+        local toggleButton = self:CreateElement("Frame", {
+            Name = "ToggleButton",
+            BackgroundColor3 = Color3.fromRGB(180, 180, 180),
+            Size = UDim2.new(0, 16, 0, 16),
+            Position = UDim2.new(0, 2, 0.5, -8),
+            AnchorPoint = Vector2.new(0, 0.5),
+            Parent = toggleBg
+        })
+        
+        -- Add corner rounding
+        local buttonCorner = self:CreateElement("UICorner", {
+            Name = "ButtonCorner",
+            CornerRadius = UDim.new(1, 0),
+            Parent = toggleButton
+        })
+        
+        -- Create click detector
+        local clickDetector = self:CreateElement("TextButton", {
+            Name = "ClickDetector",
+            Text = "",
+            BackgroundTransparency = 1,
+            Size = UDim2.new(1, 0, 1, 0),
+            Parent = container
+        })
+        
+        -- Toggle animation function
+        local function animateToggle(value)
+            local goalPosition = value and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
+            local goalColor = value and self.Config.AccentColor or Color3.fromRGB(70, 70, 70)
+            
+            game:GetService("TweenService"):Create(
+                toggleButton,
+                TweenInfo.new(self.Config.TransitionTime),
+                {Position = goalPosition}
+            ):Play()
+            
+            game:GetService("TweenService"):Create(
+                toggleBg,
+                TweenInfo.new(self.Config.TransitionTime),
+                {BackgroundColor3 = goalColor}
+            ):Play()
+        end
+        
+        -- Set initial state
+        animateToggle(toggle.Value)
+        
+        -- Click handler
+        clickDetector.MouseButton1Click:Connect(function()
+            toggle.Value = not toggle.Value
+            animateToggle(toggle.Value)
+            toggle.Callback(toggle.Value)
+        end)
+        
+        -- Add toggle to section
+        table.insert(section.Options, toggle)
+        
+        return toggle
+    end,
+    
+    -- Other UI element creation functions would go here...
+    
+    -- Show/hide UI
+    ToggleUI = function(self)
+        self.Open = not self.Open
+        for _, window in pairs(self.Windows) do
+            window.Container.Visible = self.Open
+        end
+    end
+}
+
+return ModernUI
